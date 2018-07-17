@@ -5,18 +5,8 @@ if [ `whoami` != root ]; then
 	exit $?;
 fi
 
-if ! which curl &> /dev/null ;then
-	echo -e '\033[31mCurl is not installed!!\033[0m'
-    exit $?;
-fi 
-
-if ! which route &> /dev/null ;then
-	echo -e '\033[31mRoute is not installed!!\033[0m'
-    exit $?;
-fi
-
 if ! which ip route &> /dev/null ;then
-	echo -e '\033[31mIp route is not installed!!\033[0m'
+	echo -e '\033[31mIp Route is not installed!!\033[0m'
     exit $?;
 fi
 
@@ -30,8 +20,8 @@ WLA=$(ip -o link show | awk '{print substr($2, 1, length($2)-1)}' | sed -n 3p)
 ETH_W=$(ip route | awk '$1=="default" {print $5, $9}' | awk -v iface="$ETH" '$1==iface {print $2}')
 WLA_W=$(ip route | awk '$1=="default" {print $5, $9}' | awk -v iface="$WLA" '$1==iface {print $2}')
 
-ETH_GW=$(route -n | awk '$1=="0.0.0.0" {print $8, $2}' | awk -v iface="$ETH" '$1==iface {print $2}')
-WLA_GW=$(route -n | awk '$1=="0.0.0.0" {print $8, $2}' | awk -v iface="$WLA" '$1==iface {print $2}')
+ETH_GW=$( ip route | awk '$1=="default" {print $3,$5}' | awk -v iface="$ETH" '$2==iface {print $1}')
+WLA_GW=$( ip route | awk '$1=="default" {print $3,$5}' | awk -v iface="$WLA" '$2==iface {print $1}')
 
 echo "Gateways->
 	$ETH: $ETH_GW   metric $ETH_W 
@@ -108,10 +98,7 @@ grep -q -F '10.112.15.17    asmill01' /etc/hosts || echo '10.112.15.17    asmill
 
 echo 'Testing Configuration...'
 
-OUT_CONNECT=$(curl -m 20 -s https://twitter.com/ | wc -l)
-IN_CONNECT=$(curl -m 20 -s http://maven.ptin.corppt.com/webapp/ | wc -l)
-
-if [ "$OUT_CONNECT" -gt 500 ] && [ "$IN_CONNECT" -gt 20 ]; then
+if wget -q --spider twitter.com && wget -q --spider maven.ptin.corppt.com/webapp/; then
 	echo  -e '	\033[32mConfiguration is OK\033[0m'
 else
 	echo  -e '	\033[31mConfiguration is not OK :(\033[0m'
