@@ -23,28 +23,40 @@ WLA_W=$(ip route | awk '$1=="default" {print $5, $9}' | awk -v iface="$WLA" '$1=
 ETH_GW=$( ip route | awk '$1=="default" {print $3,$5}' | awk -v iface="$ETH" '$2==iface {print $1}')
 WLA_GW=$( ip route | awk '$1=="default" {print $3,$5}' | awk -v iface="$WLA" '$2==iface {print $1}')
 
+if [ -z "$ETH_GW" ] && [ -z "$WLA_GW" ];then
+	echo -e '\033[31mNo default Gateways found!!\033[0m'
+    exit $?;
+fi
+
 echo "Gateways->
 	$ETH: $ETH_GW   metric $ETH_W 
 	$WLA: $WLA_GW   metric $WLA_W"
 
 if [ "$1" = "--revert" ]; then
-	echo "$WLA"
 	echo "Reseting configurations..."
-	ip route del 10.0.0.0/8 via 10.112.82.254
-    export http_proxy="http://194.65.37.122:80"
-    export https_proxy="http://194.65.37.122:80"
-    export ftp_proxy="http://194.65.37.122:80"
-    export no_proxy="localhost,127.0.0.1,.ptin.corppt.com,10.112.97.170,10.112.85.38,ept.telecom.pt,http://asmill01"
+	ip route del 10.0.0.0/8 via $ETH_GW
+	ip route del 172.16.0.0/12 via $ETH_GW
+	ip route del 192.168.0.0/16 via $ETH_GW
 
-	env | grep proxy
-
-	OUT_CONNECT=$(curl -m 20 -s https://google.com/ | wc -l)
-	IN_CONNECT=$(curl -m 20 -s http://maven.ptin.corppt.com/webapp/ | wc -l)
-
-	if [ "$OUT_CONNECT" -gt 500 ] && [ "$IN_CONNECT" -gt 20 ]; then
-		echo  -e '	\033[32mDe-Configuration is OK\033[0m'
+    if [ -z "${http_proxy}" ]; then
+    	echo "Setting proxy environment variables..."
+    	echo 'http_proxy="http://194.65.37.122:80"' >> /etc/environment 
+        echo 'https_proxy="http://194.65.37.122:80"' >> /etc/environment
+		echo 'ftp_proxy="http://194.65.37.122:80"' >> /etc/environment
+		echo 'no_proxy="localhost,127.0.0.1,.ptin.corppt.com,10.112.97.170,10.112.85.38,ept.telecom.pt,http://asmill01"' >> /etc/environment 
+    	source /etc/environment
+    	for env in $( cat /etc/environment )
+    	do
+    		if [[ ${env:0:1} != '#' ]]; then
+    			export $(echo $env | sed -e 's/"//g')
+    		fi
+    	done
+    fi
+    	
+	if wget -q --spider maven.ptin.corppt.com/webapp/ && wget -q --spider google; then
+		echo  -e '\033[32mDe-Configuration is OK\033[0m'
 	else
-		echo  -e '	\033[31mDe-Configuration is not OK :(\033[0m'
+		echo  -e '\033[31mDe-Configuration is not OK :(\033[0m'
 	fi  
 
 	exit $?;
@@ -94,6 +106,16 @@ if [ -f /etc/dhcpcd.conf ]; then
 	metric $WLA_TRGT_W" > /etc/dhcpcd.conf
 fi
 
+if [ ! -z "${http_proxy}" ]; then
+	echo "Setting proxy environment variables..."
+	sed -i "$(($(wc -l < /etc/environment) - 3)),\$d" /etc/environment
+	source /etc/environment
+	unset http_proxy
+	unset https_proxy
+	unset ftp_proxy
+	unset no_proxy
+fi	
+
 grep -q -F '10.112.15.17    asmill01' /etc/hosts || echo '10.112.15.17    asmill01' >> /etc/hosts
 
 echo 'Testing Configuration...'
@@ -102,6 +124,4 @@ if wget -q --spider twitter.com && wget -q --spider maven.ptin.corppt.com/webapp
 	echo  -e '	\033[32mConfiguration is OK\033[0m'
 else
 	echo  -e '	\033[31mConfiguration is not OK :(\033[0m'
-	ifdown $ETH && ifup $ETH
-	ifdown $WLA && ifup $WLA
 fi  
