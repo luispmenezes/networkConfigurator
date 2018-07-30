@@ -23,9 +23,29 @@ WLA_W=$(ip route | awk '$1=="default" {print $5, $9}' | awk -v iface="$WLA" '$1=
 ETH_GW=$( ip route | awk '$1=="default" {print $3,$5}' | awk -v iface="$ETH" '$2==iface {print $1}')
 WLA_GW=$( ip route | awk '$1=="default" {print $3,$5}' | awk -v iface="$WLA" '$2==iface {print $1}')
 
-if [ -z "$ETH_GW" ] && [ -z "$WLA_GW" ];then
+if [ -z "$ETH_GW" ] || [ -z "$WLA_GW" ];then
 	echo -e '\033[31mNo default Gateways found!!\033[0m'
-    exit $?;
+	read  -n 1 -p "Set Default Gateways?(y/n)" setGW
+	if [ "$setGW" = "y" ];then
+		read  -n 1 -p "Use default values?(y/n)" autoConf
+		if [ "$autoConf" = "y" ];then
+			if [ -z "$ETH_GW" ]; then
+				ETH="10.112.82.254"
+			fi
+			if [ -z "$WLA_GW" ]; then
+				ETH="192.168.1.254"
+			fi
+		else
+			if [ -z "$ETH_GW" ]; then
+				read  -n 1 -p "Gateway for $ETH" ETH_GW
+			fi
+			if [ -z "$WLA_GW" ]; then
+				read  -n 1 -p "Gateway for $WLA" WLA_GW
+			fi
+		fi
+	else
+		exit $?;
+	fi  
 fi
 
 echo "Gateways->
