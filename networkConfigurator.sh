@@ -140,7 +140,7 @@ grep -q -F '10.112.15.17    asmill01' /etc/hosts || echo '10.112.15.17    asmill
 
 echo 'Testing Configuration...'
 
-if wget -q --spider twitter.com && wget -q --spider maven.ptin.corppt.com/webapp/; then
+if wget -q -t 1 --timeout=15 --spider twitter.com && wget -q -t 1 --timeout=15 --spider maven.ptin.corppt.com/webapp/; then
 	echo  -e '	\033[32mConfiguration is OK\033[0m'
 else
 	echo  -e '	\033[31mConfiguration is not OK :(\033[0m'
