@@ -10,6 +10,11 @@ if ! which ip route &> /dev/null ;then
     exit $?;
 fi
 
+if [ `iwconfig 2>&1 | grep ESSID | awk '{print $4}' | cut -c7-` == off/any ]; then
+	echo -e '\033[31mNot Connect via Wifi!\033[0m' 
+	exit $?;
+fi
+
 ETH_TRGT_W="200"
 WLA_TRGT_W="50"
 LCL_TRGT_W="5"
