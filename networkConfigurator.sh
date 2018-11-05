@@ -5,8 +5,8 @@ if [ `whoami` != root ]; then
 	exit $?;
 fi
 
-if ! which ip route &> /dev/null ;then
-	echo -e '\033[31mIp Route is not installed!!\033[0m'
+if ! which ip &> /dev/null ;then
+	echo -e '\033[31mIp is not installed!!\033[0m'
     exit $?;
 fi
 
