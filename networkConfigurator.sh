@@ -10,7 +10,7 @@ if ! which ip &> /dev/null ;then
     exit $?;
 fi
 
-if [ `iwconfig 2>&1 | grep ESSID | awk '{print $4}' | cut -c7-` == off/any ]; then
+if [[ $(nmcli connection show --active | grep wifi | wc -l) > 1 ]]; then
 	echo -e '\033[31mNot Connect via Wifi!\033[0m' 
 	exit $?;
 fi
